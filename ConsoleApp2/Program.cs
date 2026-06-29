@@ -4,254 +4,135 @@ public static class Program
 {
     public static void Main()
     {
-        List<WarriorFactory> factories = [
-            new WarriorFactory(),
-            new LuckierFactory(),
-            new BerserkFactory(),
-            new AssassinFactory()
-            ];
-
-        WarriorsFactory warriorsFactory = new(factories);
-        Arena arena = new(new(warriorsFactory.Create()), new(warriorsFactory.Create()));
-        arena.Fight();
-    }
-}
-public interface IWarriorFactory
-{
-    public Warrior Create();
-}
-
-public class WarriorsFactory
-{
-    private const int WarriorsCount = 100;
-
-    List<WarriorFactory> _factoies;
-
-    public WarriorsFactory(List<WarriorFactory> factories) =>
-        _factoies = factories;
-
-
-    public List<Warrior> Create()
-    {
-        List<Warrior> list = new();
-
-        for (int i = 0; i < WarriorsCount; i++)
-            list.Add(_factoies[Utils.Random.Next(_factoies.Count)].Create());
-
-        return list;
-    }
-
-}
-
-public class WarriorFactory : IWarriorFactory
-{
-    private const int MinWarriorsHealth = 50;
-    private const int MaxWarriorsHealth = 150;
-    private const int MinWarriorsDamage = 20;
-    private const int MaxWarriorsDamage = 60;
-
-    public virtual Warrior Create()
-    {
-        return new Warrior(GetRandomHealth(), GetRandomDamage());
-    }
-
-    protected int GetRandomHealth() =>
-        Utils.Random.Next(MinWarriorsHealth, MaxWarriorsHealth + 1);
-
-    protected int GetRandomDamage() =>
-        Utils.Random.Next(MinWarriorsDamage, MaxWarriorsDamage + 1);
-}
-
-public class LuckierFactory : WarriorFactory
-{
-    private const float MinLuckierMultiplyer = 0.8f;
-    private const float MaxLuckierMultiplyer = 2.5f;
-    public override Warrior Create()
-    {
-        return new Luckier(GetRandomHealth(),
-                    GetRandomDamage(),
-                    Utils.Random.Next((int)(MinLuckierMultiplyer * 100), (int)(MaxLuckierMultiplyer * 100)) / 100);
+        Aquarium aquarium = new Aquarium();
+        aquarium.Live();
     }
 }
 
-public class BerserkFactory : WarriorFactory
+public class FishFactory
 {
-    protected const int MinBerserkDamageEnemiesPerAttack = 2;
-    protected const int MaxBerserkDamageEnemiesPerAttack = 5;
+    private const int MinFishAge = 5;
+    private const int MaxFishAge = 15;
 
-    public override Warrior Create()
-    {
-        return new Berserk(GetRandomHealth(),
-                    GetRandomDamage(),
-                    Utils.Random.Next(MinBerserkDamageEnemiesPerAttack, MaxBerserkDamageEnemiesPerAttack));
-    }
+    public Fish Create() =>
+        new(Utils.Random.Next(MinFishAge, MaxFishAge));
 }
 
-public class AssassinFactory : BerserkFactory
+public class Aquarium
 {
-    public override Warrior Create()
-    {
-        return new Assassin(GetRandomHealth(),
-                    GetRandomDamage(),
-                    Utils.Random.Next(MinBerserkDamageEnemiesPerAttack, MaxBerserkDamageEnemiesPerAttack));
-    }
-}
+    const string AddFishChoise = "1";
+    const string DeleteFishChoise = "2";
+    const string ExitChoise = "0";
 
-public class Arena
-{
-    private Army _firstArmy;
-    private Army _secondArmy;
+    FishFactory _factory;
+    List<Fish> _fishList;
 
-    public Arena(Army firstArmy, Army secondArmy)
+    public Aquarium()
     {
-        _firstArmy = firstArmy;
-        _secondArmy = secondArmy;
+        _factory = new FishFactory();
+        _fishList = new List<Fish>();
     }
 
-    public void Fight()
+    public void Live()
     {
-        while (_firstArmy.IsLive && _secondArmy.IsLive)
+        bool isWork = true;
+
+        while (isWork)
         {
             Console.Clear();
-            Console.WriteLine(_firstArmy.GetWarriorsInfo());
-            Console.WriteLine();
-            Console.WriteLine(_secondArmy.GetWarriorsInfo());
+            ShowFishes();
+            string choise = Utils.GetUserInput($"{AddFishChoise} - Добавить случайную рыбу\n{DeleteFishChoise} - Удалить случайную рыбу\n" +
+                $"{ExitChoise} - Выход\nЛюбая другая кнопка - пропустить ход\n");
 
-            _firstArmy.AttackEnemies(_secondArmy.Warriors);
-            _secondArmy.AttackEnemies(_firstArmy.Warriors);
-            _firstArmy.RemoveDeadWarriors();
-            _secondArmy.RemoveDeadWarriors();
-            Console.ReadKey();
+            switch (choise)
+            {
+                case AddFishChoise:
+                    AddFish();
+                    break;
+
+                case DeleteFishChoise:
+                    DeleteFish();
+                    break;
+
+                case ExitChoise:
+                    isWork = false;
+                    break;
+
+                default:
+                    break;
+            }
+            AddFishAge();
+            DeleteDeadFishes();
         }
     }
-}
 
-public class Army
-{
-    private List<Warrior> _warriors;
+    private void AddFish() =>
+        _fishList.Add(_factory.Create());
 
-    public Army(List<Warrior> warriors) =>
-        _warriors = warriors;
-
-    public bool IsLive { get => _warriors.Count > 0; }
-    public List<IDamagable> Warriors { get => _warriors.ToList<IDamagable>(); }
-
-
-    public string GetWarriorsInfo()
+    private void DeleteFish()
     {
-        string info = "";
+        if (_fishList.Count == 0)
+            return;
 
-        foreach (Warrior warrior in _warriors)
-            info += warrior.Symbol;
-
-        return info;
+        _fishList.Remove(_fishList[Utils.Random.Next(_fishList.Count)]);
     }
 
-    public void AttackEnemies(List<IDamagable> enemies)
+    private void DeleteDeadFishes()
     {
-        foreach(Warrior warrior in _warriors)
-            warrior.Attack(enemies);
+        List<Fish> fishList = _fishList.ToList();
+
+        foreach (Fish fish in fishList)
+            if(fish.IsLive == false)
+                _fishList.Remove(fish);
     }
 
-    public void RemoveDeadWarriors()
+    private void ShowFishes()
     {
-        List<Warrior> warriors = _warriors.ToList();
+        Console.WriteLine("Список рыб:");
 
-        foreach (Warrior warrior in warriors)
-            if(warrior.IsLive == false)
-                _warriors.Remove(warrior);
-    }
-}
-
-public interface IDamagable
-{
-    public void TakeDamage(int damage);
-}
-
-
-public class Warrior : IDamagable
-{
-    protected int Health;
-    protected int Damage;
-
-    public Warrior(int health, int damage)
-    {
-        Health = health;
-        Damage = damage;
-
-        Symbol = 'W';
-    }
-
-    public char Symbol { get; protected set; }
-    public bool IsLive { get => Health > 0;}
-
-    public void TakeDamage(int damage) =>
-        Health -= damage;
-
-    public virtual void Attack(List<IDamagable> enemies) =>
-        enemies[Utils.Random.Next(enemies.Count)].TakeDamage(Damage);
-}
-
-public class Luckier : Warrior
-{
-    private float _damageMultiplyer;
-
-    public Luckier(int health, int damage, float damageMultiplyer) : base(health, damage)
-    {
-        _damageMultiplyer = damageMultiplyer;
-        Symbol = 'L';
-    }
-
-    public override void Attack(List<IDamagable> enemies) =>
-        enemies[Utils.Random.Next(enemies.Count)].TakeDamage((int)(Damage * _damageMultiplyer));
-}
-
-public class Berserk : Warrior
-{
-    protected int CountDamageEnemiesByAttack;
-
-    public Berserk(int health, int damage, int countDamagableEnemiesByAttack) : base(health, damage)
-    {
-        CountDamageEnemiesByAttack = countDamagableEnemiesByAttack;
-        Symbol = 'B';
-    }
-
-    public override void Attack(List<IDamagable> enemies)
-    {
-        List<IDamagable> enemiesList = enemies.ToList();
-
-        for (int i = 0; i < CountDamageEnemiesByAttack; i++)
+        for (int i = 0; i < _fishList.Count; i++)
         {
-            if (enemiesList.Count > 0)
-                break;
-
-            IDamagable enemy = enemiesList[Utils.Random.Next(enemiesList.Count)];
-            enemy.TakeDamage(Damage);
-            enemiesList.Remove(enemy);
+            Console.WriteLine($"{i}) {_fishList[i].ToString()}");
         }
+
+        Console.WriteLine();
+    }
+
+    private void AddFishAge()
+    {
+        foreach(Fish fish in _fishList)
+            fish.AddOneAge();
     }
 }
 
-public class Assassin : Berserk
+public class Fish
 {
-    public Assassin(int health, int damage, int countDamagableEnemiesByAttack)
-        : base(health, damage, countDamagableEnemiesByAttack)
+    private int _age;
+    private int _maxAge;
+
+    public Fish(int maxAge)
     {
-        Symbol = 'A';
+        _maxAge = maxAge;
+        _age = 0;
     }
 
-    public override void Attack(List<IDamagable> enemies)
-    {
-        for (int i = 0; i < CountDamageEnemiesByAttack; i++)
-        {
-            IDamagable enemy = enemies[Utils.Random.Next(enemies.Count)];
-            enemy.TakeDamage(Damage);
-        }
-    }
+    public bool IsLive { get => _age <= _maxAge; }
+
+    public void AddOneAge() =>
+        _age++;
+
+    public override string ToString() =>
+        $"Возраст {_age}/{_maxAge}";
 }
 
 public static class Utils
 {
+    public static string GetUserInput(string text)
+    {
+        Console.WriteLine(text);
+        return Console.ReadLine();
+    }
+
     public static readonly Random Random = new();
 }
 
