@@ -50,9 +50,9 @@ public class ProductFactory
 
 public class Administrator
 {
-    private static int MaxClientsCount = 10;
-    private static int MaxClientsProductsCount = 15;
-    private static int MaxClientsMoney = 2000;
+    private const int MaxClientsCount = 10;
+    private const int MaxClientsProductsCount = 15;
+    private const int MaxClientsMoney = 2000;
 
     private Stack<Client> _clients;
     private List<Product> _products;
@@ -89,6 +89,7 @@ public class Administrator
 public class Client
 {
     private List<Product> _productsInBasket;
+    private List<Product> _productsInBag;
     private int _money;
 
     public Client(List<Product> productsInBasket, int money)
@@ -97,7 +98,7 @@ public class Client
         _money = money;
     }
 
-    public List<Product> ProductsInBag { get; private set; }
+    public List<Product> ProductsInBag { get =>  _productsInBasket.ToList(); }
 
     public int BuyProducts()
     {
@@ -106,7 +107,7 @@ public class Client
 
         int cost = GetProductsCost();
         _money -= cost;
-        ProductsInBag = _productsInBasket.ToList();
+        _productsInBag = _productsInBasket.ToList();
         _productsInBasket.Clear();
         return cost;
     }
