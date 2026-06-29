@@ -1,28 +1,34 @@
-﻿public static class Program
+﻿using System;
+
+public static class Program
 {
     public static void Main()
     {
-        Administrator dispatcher = new();
+        List<WarriorFactory> factories = [
+            new WarriorFactory(),
+            new LuckierFactory(),
+            new BerserkFactory(),
+            new AssassinFactory()
+            ];
 
-        while (true) 
-        { 
-            dispatcher.Work();
-        }
+        WarriorsFactory warriorsFactory = new(factories);
+        Arena arena = new(new(warriorsFactory.Create()), new(warriorsFactory.Create()));
+        arena.Fight();
     }
 }
-
+public interface IWarriorFactory
+{
+    public Warrior Create();
+}
 
 public class WarriorsFactory
 {
     private const int WarriorsCount = 100;
-    private const int MinWarriorsHealth = 50;
-    private const int MaxWarriorsHealth = 150;
-    private const int MinWarriorsDamage = 20;
-    private const int MaxWarriorsDamage = 60;
-    private const float MinLuckierMultiplyer = 0.8f;
-    private const float MaxLuckierMultiplyer = 2.5f;
-    private const int MinBerserkDamageEnemiesPerAttack = 2;
-    private const int MaxBerserkDamageEnemiesPerAttack = 5;
+
+    List<WarriorFactory> _factoies;
+
+    public WarriorsFactory(List<WarriorFactory> factories) =>
+        _factoies = factories;
 
 
     public List<Warrior> Create()
@@ -30,62 +36,80 @@ public class WarriorsFactory
         List<Warrior> list = new();
 
         for (int i = 0; i < WarriorsCount; i++)
-            list.Add(CreateRandom());
+            list.Add(_factoies[Utils.Random.Next(_factoies.Count)].Create());
 
         return list;
     }
 
-    private Warrior CreateRandom()
+}
+
+public class WarriorFactory : IWarriorFactory
+{
+    private const int MinWarriorsHealth = 50;
+    private const int MaxWarriorsHealth = 150;
+    private const int MinWarriorsDamage = 20;
+    private const int MaxWarriorsDamage = 60;
+
+    public virtual Warrior Create()
     {
-        int type = Utils.Random.Next(Enum.GetValues(typeof(WarriorType)).Length);
-        Warrior warrior;
-        Random random = Utils.Random;
-
-        switch (type)
-        {
-            case (int)WarriorType.Warrior:
-                return new Warrior(random.Next(MinWarriorsHealth, MaxWarriorsHealth + 1), 
-                    random.Next(MinWarriorsDamage, MaxWarriorsDamage));
-
-            case (int)WarriorType.Luckier:
-                return new Luckier(random.Next(MinWarriorsHealth, MaxWarriorsHealth + 1),
-                    random.Next(MinWarriorsDamage, MaxWarriorsDamage), 
-                    random.Next((int)(MinLuckierMultiplyer * 100), (int)(MaxLuckierMultiplyer * 100)) / 100);
-
-            case (int)WarriorType.Berserk:
-                return new Berserk(random.Next(MinWarriorsHealth, MaxWarriorsHealth + 1),
-                    random.Next(MinWarriorsDamage, MaxWarriorsDamage),
-                    random.Next(MinBerserkDamageEnemiesPerAttack, MaxBerserkDamageEnemiesPerAttack));
-
-            case (int)WarriorType.Assassin:
-                return new Assassin(random.Next(MinWarriorsHealth, MaxWarriorsHealth + 1),
-                    random.Next(MinWarriorsDamage, MaxWarriorsDamage),
-                    random.Next(MinBerserkDamageEnemiesPerAttack, MaxBerserkDamageEnemiesPerAttack));
-        }
-
-        return null;
+        return new Warrior(GetRandomHealth(), GetRandomDamage());
     }
 
-    private enum WarriorType
+    protected int GetRandomHealth() =>
+        Utils.Random.Next(MinWarriorsHealth, MaxWarriorsHealth + 1);
+
+    protected int GetRandomDamage() =>
+        Utils.Random.Next(MinWarriorsDamage, MaxWarriorsDamage + 1);
+}
+
+public class LuckierFactory : WarriorFactory
+{
+    private const float MinLuckierMultiplyer = 0.8f;
+    private const float MaxLuckierMultiplyer = 2.5f;
+    public override Warrior Create()
     {
-        Warrior = 0,
-        Luckier = 1,
-        Berserk = 2,
-        Assassin = 3
+        return new Luckier(GetRandomHealth(),
+                    GetRandomDamage(),
+                    Utils.Random.Next((int)(MinLuckierMultiplyer * 100), (int)(MaxLuckierMultiplyer * 100)) / 100);
     }
 }
 
+public class BerserkFactory : WarriorFactory
+{
+    protected const int MinBerserkDamageEnemiesPerAttack = 2;
+    protected const int MaxBerserkDamageEnemiesPerAttack = 5;
 
-public class Administrator
+    public override Warrior Create()
+    {
+        return new Berserk(GetRandomHealth(),
+                    GetRandomDamage(),
+                    Utils.Random.Next(MinBerserkDamageEnemiesPerAttack, MaxBerserkDamageEnemiesPerAttack));
+    }
+}
+
+public class AssassinFactory : BerserkFactory
+{
+    public override Warrior Create()
+    {
+        return new Assassin(GetRandomHealth(),
+                    GetRandomDamage(),
+                    Utils.Random.Next(MinBerserkDamageEnemiesPerAttack, MaxBerserkDamageEnemiesPerAttack));
+    }
+}
+
+public class Arena
 {
     private Army _firstArmy;
     private Army _secondArmy;
 
-    public void Work()
+    public Arena(Army firstArmy, Army secondArmy)
     {
-        _firstArmy = new(new WarriorsFactory().Create());
-        _secondArmy = new(new WarriorsFactory().Create());
+        _firstArmy = firstArmy;
+        _secondArmy = secondArmy;
+    }
 
+    public void Fight()
+    {
         while (_firstArmy.IsLive && _secondArmy.IsLive)
         {
             Console.Clear();
@@ -95,8 +119,8 @@ public class Administrator
 
             _firstArmy.AttackEnemies(_secondArmy.Warriors);
             _secondArmy.AttackEnemies(_firstArmy.Warriors);
-            _firstArmy.CheckLivedWarriors();
-            _secondArmy.CheckLivedWarriors();
+            _firstArmy.RemoveDeadWarriors();
+            _secondArmy.RemoveDeadWarriors();
             Console.ReadKey();
         }
     }
@@ -109,7 +133,7 @@ public class Army
     public Army(List<Warrior> warriors) =>
         _warriors = warriors;
 
-    public bool IsLive { get => (_warriors.Count > 0); }
+    public bool IsLive { get => _warriors.Count > 0; }
     public List<IDamagable> Warriors { get => _warriors.ToList<IDamagable>(); }
 
 
@@ -129,7 +153,7 @@ public class Army
             warrior.Attack(enemies);
     }
 
-    public void CheckLivedWarriors()
+    public void RemoveDeadWarriors()
     {
         List<Warrior> warriors = _warriors.ToList();
 
@@ -156,18 +180,13 @@ public class Warrior : IDamagable
         Damage = damage;
 
         Symbol = 'W';
-        IsLive = true;
     }
 
     public char Symbol { get; protected set; }
-    public bool IsLive { get; private set; }
+    public bool IsLive { get => Health > 0;}
 
-    public void TakeDamage(int damage)
-    {
+    public void TakeDamage(int damage) =>
         Health -= damage;
-        if(Health <= 0)
-            IsLive = false;
-    }
 
     public virtual void Attack(List<IDamagable> enemies) =>
         enemies[Utils.Random.Next(enemies.Count)].TakeDamage(Damage);
@@ -201,8 +220,11 @@ public class Berserk : Warrior
     {
         List<IDamagable> enemiesList = enemies.ToList();
 
-        for (int i = 0; i < CountDamageEnemiesByAttack && enemiesList.Count > 0; i++)
+        for (int i = 0; i < CountDamageEnemiesByAttack; i++)
         {
+            if (enemiesList.Count > 0)
+                break;
+
             IDamagable enemy = enemiesList[Utils.Random.Next(enemiesList.Count)];
             enemy.TakeDamage(Damage);
             enemiesList.Remove(enemy);
