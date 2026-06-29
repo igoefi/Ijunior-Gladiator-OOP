@@ -3,153 +3,233 @@
     public static void Main()
     {
         Administrator dispatcher = new();
-        dispatcher.Work();
+
+        while (true) 
+        { 
+            dispatcher.Work();
+        }
     }
 }
 
-public class ClientFactory
+
+public class WarriorsFactory
 {
-    public Stack<Client> Create(int count, int maxProductsCount, int maxMoney, List<Product> products)
+    private const int WarriorsCount = 100;
+    private const int MinWarriorsHealth = 50;
+    private const int MaxWarriorsHealth = 150;
+    private const int MinWarriorsDamage = 20;
+    private const int MaxWarriorsDamage = 60;
+    private const float MinLuckierMultiplyer = 0.8f;
+    private const float MaxLuckierMultiplyer = 2.5f;
+    private const int MinBerserkDamageEnemiesPerAttack = 2;
+    private const int MaxBerserkDamageEnemiesPerAttack = 5;
+
+
+    public List<Warrior> Create()
     {
-        Stack<Client> clientsStack = new Stack<Client>();
+        List<Warrior> list = new();
 
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < WarriorsCount; i++)
+            list.Add(CreateRandom());
+
+        return list;
+    }
+
+    private Warrior CreateRandom()
+    {
+        int type = Utils.Random.Next(Enum.GetValues(typeof(WarriorType)).Length);
+        Warrior warrior;
+        Random random = Utils.Random;
+
+        switch (type)
         {
-            List<Product> addProducts = new List<Product>();
+            case (int)WarriorType.Warrior:
+                return new Warrior(random.Next(MinWarriorsHealth, MaxWarriorsHealth + 1), 
+                    random.Next(MinWarriorsDamage, MaxWarriorsDamage));
 
-            for (int j = 0; j < Utils.Random.Next(maxProductsCount); j++)
-                addProducts.Add(products[Utils.Random.Next(1, products.Count)]);
+            case (int)WarriorType.Luckier:
+                return new Luckier(random.Next(MinWarriorsHealth, MaxWarriorsHealth + 1),
+                    random.Next(MinWarriorsDamage, MaxWarriorsDamage), 
+                    random.Next((int)(MinLuckierMultiplyer * 100), (int)(MaxLuckierMultiplyer * 100)) / 100);
 
-            clientsStack.Push(new Client(addProducts, Utils.Random.Next(maxMoney + 1)));
+            case (int)WarriorType.Berserk:
+                return new Berserk(random.Next(MinWarriorsHealth, MaxWarriorsHealth + 1),
+                    random.Next(MinWarriorsDamage, MaxWarriorsDamage),
+                    random.Next(MinBerserkDamageEnemiesPerAttack, MaxBerserkDamageEnemiesPerAttack));
+
+            case (int)WarriorType.Assassin:
+                return new Assassin(random.Next(MinWarriorsHealth, MaxWarriorsHealth + 1),
+                    random.Next(MinWarriorsDamage, MaxWarriorsDamage),
+                    random.Next(MinBerserkDamageEnemiesPerAttack, MaxBerserkDamageEnemiesPerAttack));
         }
 
-        return clientsStack;
+        return null;
     }
-}
 
-public class ProductFactory
-{
-    public List<Product> Create()
+    private enum WarriorType
     {
-        List<Product> products =
-        [
-            new Product("Жевачка", 10),
-            new Product("Молоко", 100),
-            new Product("Хлопья", 80),
-            new Product("Сыр", 150),
-            new Product("Пепси-кола", 199),
-            new Product("Вода", 60),
-            new Product("Чипсики", 120),
-            new Product("Салфетки", 70),
-        ];
-
-        return products;
+        Warrior = 0,
+        Luckier = 1,
+        Berserk = 2,
+        Assassin = 3
     }
 }
 
 
 public class Administrator
 {
-    private const int MaxClientsCount = 10;
-    private const int MaxClientsProductsCount = 15;
-    private const int MaxClientsMoney = 2000;
-
-    private Stack<Client> _clients;
-    private List<Product> _products;
-    private int _money;
-
-    public Administrator()
-    {
-        _products = new ProductFactory().Create();
-        _clients = new ClientFactory().Create(MaxClientsCount, MaxClientsProductsCount, MaxClientsMoney, _products);
-        _money = 0;
-    }
+    private Army _firstArmy;
+    private Army _secondArmy;
 
     public void Work()
     {
-        while(_clients.Count > 0)
+        _firstArmy = new(new WarriorsFactory().Create());
+        _secondArmy = new(new WarriorsFactory().Create());
+
+        while (_firstArmy.IsLive && _secondArmy.IsLive)
         {
-            Console.ReadKey();
-            Client client = _clients.Pop();
-            int income = client.BuyProducts();
-
-            Console.WriteLine($"Клиент купил на сумму {income}. Вот какие товары купил:");
-
-            foreach(Product product in client.ProductsInBag)
-                Console.WriteLine($"{product.Name} за {product.Cost} деняг");
-
+            Console.Clear();
+            Console.WriteLine(_firstArmy.GetWarriorsInfo());
             Console.WriteLine();
-            _money += income;
+            Console.WriteLine(_secondArmy.GetWarriorsInfo());
+
+            _firstArmy.AttackEnemies(_secondArmy.Warriors);
+            _secondArmy.AttackEnemies(_firstArmy.Warriors);
+            _firstArmy.CheckLivedWarriors();
+            _secondArmy.CheckLivedWarriors();
+            Console.ReadKey();
         }
-
-        Console.WriteLine($"Клиенты закончились. На счету магазина {_money} денег");
     }
 }
 
-public class Client
+public class Army
 {
-    private List<Product> _productsInBasket;
-    private List<Product> _productsInBag;
-    private int _money;
+    private List<Warrior> _warriors;
 
-    public Client(List<Product> productsInBasket, int money)
+    public Army(List<Warrior> warriors) =>
+        _warriors = warriors;
+
+    public bool IsLive { get => (_warriors.Count > 0); }
+    public List<IDamagable> Warriors { get => _warriors.ToList<IDamagable>(); }
+
+
+    public string GetWarriorsInfo()
     {
-        _productsInBasket = productsInBasket;
-        _money = money;
+        string info = "";
+
+        foreach (Warrior warrior in _warriors)
+            info += warrior.Symbol;
+
+        return info;
     }
 
-    public List<Product> ProductsInBag { get =>  _productsInBasket.ToList(); }
-
-    public int BuyProducts()
+    public void AttackEnemies(List<IDamagable> enemies)
     {
-        while(GetProductsCost() > _money)
-            DeleteRandomProductInBasket();
-
-        int cost = GetProductsCost();
-        _money -= cost;
-        _productsInBag = _productsInBasket.ToList();
-        _productsInBasket.Clear();
-        return cost;
+        foreach(Warrior warrior in _warriors)
+            warrior.Attack(enemies);
     }
 
-    private void DeleteRandomProductInBasket() =>
-        _productsInBasket.Remove
-            (_productsInBasket[Utils.Random.Next(_productsInBasket.Count)]);
-
-    private int GetProductsCost()
+    public void CheckLivedWarriors()
     {
-        int cost = 0;
+        List<Warrior> warriors = _warriors.ToList();
 
-        foreach(Product product in _productsInBasket)
-            cost += product.Cost;
-
-        return cost;
+        foreach (Warrior warrior in warriors)
+            if(warrior.IsLive == false)
+                _warriors.Remove(warrior);
     }
 }
 
-public struct Product(string name, int cost)
+public interface IDamagable
 {
-    public string Name { get; private set; } = name;
-    public int Cost { get; private set; } = cost;
+    public void TakeDamage(int damage);
+}
+
+
+public class Warrior : IDamagable
+{
+    protected int Health;
+    protected int Damage;
+
+    public Warrior(int health, int damage)
+    {
+        Health = health;
+        Damage = damage;
+
+        Symbol = 'W';
+        IsLive = true;
+    }
+
+    public char Symbol { get; protected set; }
+    public bool IsLive { get; private set; }
+
+    public void TakeDamage(int damage)
+    {
+        Health -= damage;
+        if(Health <= 0)
+            IsLive = false;
+    }
+
+    public virtual void Attack(List<IDamagable> enemies) =>
+        enemies[Utils.Random.Next(enemies.Count)].TakeDamage(Damage);
+}
+
+public class Luckier : Warrior
+{
+    private float _damageMultiplyer;
+
+    public Luckier(int health, int damage, float damageMultiplyer) : base(health, damage)
+    {
+        _damageMultiplyer = damageMultiplyer;
+        Symbol = 'L';
+    }
+
+    public override void Attack(List<IDamagable> enemies) =>
+        enemies[Utils.Random.Next(enemies.Count)].TakeDamage((int)(Damage * _damageMultiplyer));
+}
+
+public class Berserk : Warrior
+{
+    protected int CountDamageEnemiesByAttack;
+
+    public Berserk(int health, int damage, int countDamagableEnemiesByAttack) : base(health, damage)
+    {
+        CountDamageEnemiesByAttack = countDamagableEnemiesByAttack;
+        Symbol = 'B';
+    }
+
+    public override void Attack(List<IDamagable> enemies)
+    {
+        List<IDamagable> enemiesList = enemies.ToList();
+
+        for (int i = 0; i < CountDamageEnemiesByAttack && enemiesList.Count > 0; i++)
+        {
+            IDamagable enemy = enemiesList[Utils.Random.Next(enemiesList.Count)];
+            enemy.TakeDamage(Damage);
+            enemiesList.Remove(enemy);
+        }
+    }
+}
+
+public class Assassin : Berserk
+{
+    public Assassin(int health, int damage, int countDamagableEnemiesByAttack)
+        : base(health, damage, countDamagableEnemiesByAttack)
+    {
+        Symbol = 'A';
+    }
+
+    public override void Attack(List<IDamagable> enemies)
+    {
+        for (int i = 0; i < CountDamageEnemiesByAttack; i++)
+        {
+            IDamagable enemy = enemies[Utils.Random.Next(enemies.Count)];
+            enemy.TakeDamage(Damage);
+        }
+    }
 }
 
 public static class Utils
 {
     public static readonly Random Random = new();
-
-    public static string GetUserInput(string text)
-    {
-        Console.WriteLine(text);
-        return Console.ReadLine();
-    }
-
-    public static bool GetNumFromUser(out int num)
-    {
-        if (int.TryParse(Console.ReadLine(), out num))
-            return true;
-
-        Console.WriteLine("Некоректный ввод");
-        return false;
-    }
 }
 
