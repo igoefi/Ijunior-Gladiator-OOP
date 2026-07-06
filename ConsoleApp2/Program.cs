@@ -1,128 +1,129 @@
-﻿using System;
-
-public static class Program
+﻿public static class Program
 {
     public static void Main()
     {
-        Aquarium aquarium = new Aquarium();
-        aquarium.Live();
+        List<AnimalBase> animalsList = [
+            new Lion(),
+            new Parrot(),
+            new Turtle(),
+            new Infocigan()
+            ];
+        AviariesFactory aviariesFactory = new AviariesFactory();
+
+
+        Zoopark zoopark = new Zoopark(aviariesFactory.Create(animalsList));
+        zoopark.Work();
     }
 }
 
-public class FishFactory
+public class AnimalFactory
 {
-    private const int MinFishAge = 5;
-    private const int MaxFishAge = 15;
+    public List<AnimalBase> CreateRandomCount(AnimalBase animalType, int randomMin, int randomMax)
+    {
+        var list = new List<AnimalBase>();
+        int count = Utils.Random.Next(randomMin, randomMax);
 
-    public Fish Create() =>
-        new(Utils.Random.Next(MinFishAge, MaxFishAge));
+        for (int i = 0; i < count; i++)
+            list.Add(animalType.Multiply());
+
+        return list;
+    }
 }
 
-public class Aquarium
+public class AviariesFactory
 {
-    const string AddFishChoise = "1";
-    const string DeleteFishChoise = "2";
-    const string ExitChoise = "0";
+    private const int MinAnimalsCount = 3;
+    private const int MaxAnimalsCount = 8;
 
-    FishFactory _factory;
-    List<Fish> _fishList;
-
-    public Aquarium()
+    public List<Aviary> Create(List<AnimalBase> animals)
     {
-        _factory = new FishFactory();
-        _fishList = new List<Fish>();
-    }
+        var animalsFactory = new AnimalFactory();
+        var aviares = new List<Aviary>();
 
-    public void Live()
-    {
-        bool isWork = true;
-
-        while (isWork)
+        foreach (var animal in animals)
         {
-            Console.Clear();
-            ShowFishes();
-            string choise = Utils.GetUserInput($"{AddFishChoise} - Добавить случайную рыбу\n{DeleteFishChoise} - Удалить случайную рыбу\n" +
-                $"{ExitChoise} - Выход\nЛюбая другая кнопка - пропустить ход\n");
-
-            switch (choise)
-            {
-                case AddFishChoise:
-                    AddFish();
-                    break;
-
-                case DeleteFishChoise:
-                    DeleteFish();
-                    break;
-
-                case ExitChoise:
-                    isWork = false;
-                    break;
-
-                default:
-                    break;
-            }
-            AddFishAge();
-            DeleteDeadFishes();
-        }
-    }
-
-    private void AddFish() =>
-        _fishList.Add(_factory.Create());
-
-    private void DeleteFish()
-    {
-        if (_fishList.Count == 0)
-            return;
-
-        _fishList.Remove(_fishList[Utils.Random.Next(_fishList.Count)]);
-    }
-
-    private void DeleteDeadFishes()
-    {
-        List<Fish> fishList = _fishList.ToList();
-
-        foreach (Fish fish in fishList)
-            if(fish.IsLive == false)
-                _fishList.Remove(fish);
-    }
-
-    private void ShowFishes()
-    {
-        Console.WriteLine("Список рыб:");
-
-        for (int i = 0; i < _fishList.Count; i++)
-        {
-            Console.WriteLine($"{i}) {_fishList[i].ToString()}");
+            aviares.Add(new(animalsFactory.CreateRandomCount(animal, MinAnimalsCount, MaxAnimalsCount)));
         }
 
-        Console.WriteLine();
-    }
-
-    private void AddFishAge()
-    {
-        foreach(Fish fish in _fishList)
-            fish.AddOneAge();
+        return aviares;
     }
 }
 
-public class Fish
+public class Aviary
 {
-    private int _age;
-    private int _maxAge;
+    private List<AnimalBase> _animals;
 
-    public Fish(int maxAge)
+    public Aviary(List<AnimalBase> animals) =>
+        _animals = animals;
+
+    public override string ToString()
     {
-        _maxAge = maxAge;
-        _age = 0;
+        if (_animals == null || _animals.Count == 0)
+            return $"В этом вальере никого нет";
+
+        var animalRoster = "";
+
+        foreach (var animal in _animals)
+            animalRoster += animal.ToString() + "\n";
+
+        return $"Здесь обитают животные вида: {_animals[0].Name}. Вот их список:\n{animalRoster}";
+    }
+}
+
+public class Zoopark
+{
+    private List<Aviary> _aviaries;
+
+    public Zoopark(List<Aviary> aviaries) =>
+        _aviaries = aviaries;
+
+    public void Work()
+    {
+        foreach (var aviary in _aviaries)
+            Console.WriteLine(aviary.ToString());
+    }
+}
+
+public class AnimalBase
+{
+    private string _name;
+    private string _sex;
+    private string _sound;
+
+    protected AnimalBase(string sound, string name)
+    {
+        _sex = Utils.Random.NextDouble() > 0.5 ? "мужской" : "женский";
+        _sound = sound;
+        _name = name;
     }
 
-    public bool IsLive { get => _age <= _maxAge; }
-
-    public void AddOneAge() =>
-        _age++;
+    public string Name { get => _name; }
 
     public override string ToString() =>
-        $"Возраст {_age}/{_maxAge}";
+        $"Пол - {_sex}, звук - {_sound}";
+
+    public AnimalBase Multiply() =>
+        new(_sound, _name);
+}
+
+public class Lion : AnimalBase
+{
+    public Lion() : base("Арррррр", "Лев") { }
+}
+
+public class Parrot : AnimalBase
+{
+    public Parrot() : base("Ку-ку ки-ки", "Попугай") { }
+}
+
+public class Turtle : AnimalBase
+{
+    public Turtle() : base("Кхххх", "Черепаха") { }
+}
+
+public class Infocigan : AnimalBase
+{
+    public Infocigan() : base("Ку-ку-купи курсы", "Инфоцыгане") { }
 }
 
 public static class Utils
