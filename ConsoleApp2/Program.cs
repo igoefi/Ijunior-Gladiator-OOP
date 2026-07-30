@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography.X509Certificates;
-
-public static class Program
+﻿public static class Program
 {
     public static void Main()
     {
@@ -22,7 +20,7 @@ public static class Program
         };
 
         var cars = new CarsFactory().CreateCars(CarsCount, details);
-        var servise = new CarService(cars, CarServiceMoney, 
+        var servise = new CarService(cars, CarServiceMoney,
             new DetailsFactory().CreateDetailsForCarService(details));
         servise.Work();
     }
@@ -33,47 +31,46 @@ public class CarService
     const string LookStorageChoise = "1";
     const string RepairChoise = "2";
     const string DenyRepairChoise = "3";
-
     const int DenyRepairCost = 500;
 
     private List<Car> _cars;
     private int _money;
-    private List<Detail> _details;
+    private List<Detail> _storageDetails;
 
     public CarService(List<Car> cars, int money, List<Detail> details)
     {
         _cars = cars;
         _money = money;
-        _details = details;
+        _storageDetails = details;
     }
 
     public void Work()
     {
-        while(_cars.Count > 0)
+        while (_cars.Count > 0)
         {
             Console.Clear();
             var car = _cars.First();
 
             Console.WriteLine($"Твой автосервис:\nДеньги: {_money}\n" +
                 $"Стоимость отказа от машины:{DenyRepairCost}\nСледующая машина:");
-            Console.WriteLine(car.ToString());
+            Console.WriteLine(car.ToString(false));
 
 
             string userChoise = Utils.GetUserInput($"\n{LookStorageChoise}) Посмотреть склад\n" +
-                $"{RepairChoise}) Начать починку машины\n{DenyRepairChoise}) Отказаться от починки\n");
+                $"{RepairChoise}) Начать починку машины\n{DenyRepairChoise}) Отказаться от починки ({DenyRepairCost} р.)\n");
 
             switch (userChoise)
             {
                 case LookStorageChoise:
-                    LookStorage();
+                    ShowStorage();
                     break;
 
                 case RepairChoise:
-                    Repair();
+                    Repair(car);
                     break;
 
                 case DenyRepairChoise:
-                    DenyRepair();
+                    DenyRepair(car, false);
                     break;
             }
         }
@@ -81,26 +78,94 @@ public class CarService
         Console.WriteLine("Машины закончились");
     }
 
-    private void LookStorage()
+    private void ShowStorage()
     {
         Console.Clear();
 
-        foreach (var detail in _details)
+        foreach (var detail in _storageDetails)
             Console.WriteLine(detail.ToString());
 
         Console.ReadKey();
     }
 
-    private void Repair()
+    private void Repair(Car car)
     {
         Console.Clear();
+        var brokenDetails = car.GetBrokenDetails();
+        var repairDetailsReward = GetDetailsSumPrice(brokenDetails);
 
+        Console.WriteLine($"Плата за починку машины - {car.RepairReward} + стоимость деталей ({repairDetailsReward})");
+        while (brokenDetails != null)
+        {
+            Console.WriteLine(car.ToString(true)); 
+            var denyRepairCost = GetDetailsSumPrice(brokenDetails);
+            string userChoise = Utils.GetUserInput($"\n{LookStorageChoise}) Посмотреть склад\n" +
+                $"{RepairChoise}) Починить деталь\n{DenyRepairChoise}) Отказаться от починки ({denyRepairCost} р.)\n");
+
+            switch (userChoise)
+            {
+                case LookStorageChoise:
+                    ShowStorage();
+                    break;
+
+                case RepairChoise:
+                    if (RepairDetail(brokenDetails.First()))
+                        Console.WriteLine("Успешно");
+                    else
+                        Console.WriteLine("Нет такой детали(");
+                    break;
+
+                case DenyRepairChoise:
+                    DenyRepair(car, true);
+                    return;
+            }
+
+            brokenDetails = car.GetBrokenDetails();
+            if (brokenDetails.Count == 0)
+                brokenDetails = null;
+        }
+
+        _cars.Remove(car);
+        _money += repairDetailsReward + car.RepairReward;
+        Console.WriteLine("Машина починена");
     }
 
-    private void DenyRepair()
+    private bool RepairDetail(Detail carDetail)
     {
-        _money -= DenyRepairCost;
-        _cars.Remove(_cars.First());
+        foreach (var detail in _storageDetails)
+            if (detail.Equals(carDetail))
+            {
+                carDetail.Repair();
+                _storageDetails.Remove(detail);
+                return true;
+            }
+
+        return false;
+    }
+
+    private int GetDetailsSumPrice(List<Detail> details)
+    {
+        var sum = 0;
+
+        foreach (var detail in details)
+            sum += detail.Cost;
+
+        return sum;
+    }
+
+    private void DenyRepair(Car car, bool isCarInWork)
+    {
+        if (isCarInWork)
+        {
+            _money -= DenyRepairCost;
+            _money -= GetDetailsSumPrice(car.GetBrokenDetails());
+            _cars.Remove(car);
+        }
+        else
+        {
+            _money -= DenyRepairCost;
+            _cars.Remove(car);
+        }
     }
 }
 
@@ -125,8 +190,8 @@ public class CarsFactory
 public class DetailsFactory()
 {
     const double BrokeChanse = .5;
-    const int MaxDetailsCount = 0;
-    
+    const int MaxDetailsCount = 15;
+
     public List<Detail> CreateDetailsForCars(List<Detail> details)
     {
         var list = details.ToList();
@@ -142,7 +207,7 @@ public class DetailsFactory()
                 list[i] = list[i].Clone(true);
             else
                 if (Utils.Random.NextDouble() < BrokeChanse)
-                list[i] = list[i].Clone(true);
+                    list[i] = list[i].Clone(true);
         }
 
         return list;
@@ -152,7 +217,7 @@ public class DetailsFactory()
     {
         var list = new List<Detail>();
 
-        foreach(var detail in details)
+        foreach (var detail in details)
         {
             var count = Utils.Random.Next(MaxDetailsCount);
 
@@ -189,21 +254,23 @@ public class Car
         return list;
     }
 
-    public override string ToString()
+    public string ToString(bool onlyBrokenDetails)
     {
         var detailsInfo = "";
 
-        foreach (var detail in _details)
+        var details = onlyBrokenDetails ? GetBrokenDetails() : _details;
+
+        foreach (var detail in details)
             detailsInfo += detail.ToString() + "\n";
 
-        return $"Награда - {RepairReward}.\nДетали:\n{detailsInfo}";
+        return $"Награда за ремонт(не включая детали) - {RepairReward}.\nДетали:\n{detailsInfo}";
     }
 }
+
 public class Detail
 {
     private string _name;
     private int _cost;
-    public bool IsBroke { get; private set; }
 
     public Detail(string name, int cost, bool isBroke)
     {
@@ -211,6 +278,8 @@ public class Detail
         _cost = cost;
         IsBroke = isBroke;
     }
+    public bool IsBroke { get; private set; }
+    public int Cost { get { return _cost; } }
 
     public void Repair() =>
         IsBroke = false;
@@ -223,6 +292,9 @@ public class Detail
 
     public Detail Clone(bool isBroke) =>
         new Detail(_name, _cost, isBroke);
+
+    public bool Equals(Detail detail) =>
+        detail._name == _name && detail._cost == _cost;
 }
 
 public class Client
