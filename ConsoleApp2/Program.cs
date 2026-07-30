@@ -20,28 +20,41 @@
         };
 
         var cars = new CarsFactory().CreateCars(CarsCount, details);
-        var servise = new CarService(cars, CarServiceMoney,
-            new DetailsFactory().CreateDetailsForCarService(details));
+        var storage = new Storage(new DetailsFactory().CreateDetailsForCarService(details));
+        var servise = new CarService(cars, CarServiceMoney, storage);
         servise.Work();
     }
 }
 
+public class Storage
+{
+    private List<Detail> _details;
+
+    public Storage(List<Detail> details) =>
+        _details = details;
+
+    public List<Detail> Details { get { return _details.ToList(); } }
+
+    public void RemoveDetail(Detail detail) =>
+        _details.Remove(detail);
+}
+
 public class CarService
 {
-    const string LookStorageChoise = "1";
-    const string RepairChoise = "2";
-    const string DenyRepairChoise = "3";
-    const int DenyRepairCost = 500;
+    private const string LookStorageChoise = "1";
+    private const string RepairChoise = "2";
+    private const string DenyRepairChoise = "3";
+    private const int DenyRepairCost = 500;
 
     private List<Car> _cars;
     private int _money;
-    private List<Detail> _storageDetails;
+    private Storage _storage;
 
-    public CarService(List<Car> cars, int money, List<Detail> details)
+    public CarService(List<Car> cars, int money, Storage storage)
     {
         _cars = cars;
         _money = money;
-        _storageDetails = details;
+        _storage = storage;
     }
 
     public void Work()
@@ -82,7 +95,7 @@ public class CarService
     {
         Console.Clear();
 
-        foreach (var detail in _storageDetails)
+        foreach (var detail in _storage.Details)
             Console.WriteLine(detail.ToString());
 
         Console.ReadKey();
@@ -97,7 +110,7 @@ public class CarService
         Console.WriteLine($"Плата за починку машины - {car.RepairReward} + стоимость деталей ({repairDetailsReward})");
         while (brokenDetails != null)
         {
-            Console.WriteLine(car.ToString(true)); 
+            Console.WriteLine(car.ToString(true));
             var denyRepairCost = GetDetailsSumPrice(brokenDetails);
             string userChoise = Utils.GetUserInput($"\n{LookStorageChoise}) Посмотреть склад\n" +
                 $"{RepairChoise}) Починить деталь\n{DenyRepairChoise}) Отказаться от починки ({denyRepairCost} р.)\n");
@@ -128,15 +141,16 @@ public class CarService
         _cars.Remove(car);
         _money += repairDetailsReward + car.RepairReward;
         Console.WriteLine("Машина починена");
+        Console.ReadKey();
     }
 
     private bool RepairDetail(Detail carDetail)
     {
-        foreach (var detail in _storageDetails)
+        foreach (var detail in _storage.Details)
             if (detail.Equals(carDetail))
             {
                 carDetail.Repair();
-                _storageDetails.Remove(detail);
+                _storage.RemoveDetail(detail);
                 return true;
             }
 
@@ -171,7 +185,7 @@ public class CarService
 
 public class CarsFactory
 {
-    const int MaxCarRepairReward = 10000;
+    private const int MaxCarRepairReward = 10000;
 
     public List<Car> CreateCars(int count, List<Detail> details)
     {
@@ -187,10 +201,10 @@ public class CarsFactory
     }
 }
 
-public class DetailsFactory()
+public class DetailsFactory
 {
-    const double BrokeChanse = .5;
-    const int MaxDetailsCount = 15;
+    private const double BrokeChanse = .5;
+    private const int MaxDetailsCount = 15;
 
     public List<Detail> CreateDetailsForCars(List<Detail> details)
     {
@@ -227,8 +241,6 @@ public class DetailsFactory()
 
         return list;
     }
-
-
 }
 
 public class Car
@@ -278,6 +290,7 @@ public class Detail
         _cost = cost;
         IsBroke = isBroke;
     }
+
     public bool IsBroke { get; private set; }
     public int Cost { get { return _cost; } }
 
@@ -295,11 +308,6 @@ public class Detail
 
     public bool Equals(Detail detail) =>
         detail._name == _name && detail._cost == _cost;
-}
-
-public class Client
-{
-    private Car Car { get; set; }
 }
 
 public static class Utils
