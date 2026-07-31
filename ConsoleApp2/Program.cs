@@ -13,6 +13,7 @@
         var filtred = from Criminal criminal in criiminals
                       where criminal.Nationality == "Энчпочмак" &&
                       criminal.Height == 185 && criminal.Weight == 100
+                      && criminal.IsOnTheArrest == false
                       select criminal;
         Console.WriteLine("Все по запросу:");
 
