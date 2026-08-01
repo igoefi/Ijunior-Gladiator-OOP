@@ -10,26 +10,30 @@
             new Criminal("Владимир Владимирович Владикавказович", true, 165, 100, "Русский")
         };
 
-        var filtred = from Criminal criminal in criiminals
-                      where criminal.Nationality == "Энчпочмак" &&
-                      criminal.Height == 185 && criminal.Weight == 100
-                      && criminal.IsOnTheArrest == false
-                      select criminal;
+        var needHeight = 185;
+        var needWeigth = 100;
+        var needNationality = "Энчпочмак";
+
+        var filtred = criiminals.Where(criminal => criminal.Nationality == needNationality && criminal.Height == needHeight
+        && criminal.Weight == needHeight && criminal.IsOnTheArrest == false);
         Console.WriteLine("Все по запросу:");
 
         foreach (var criminal in filtred)
-            Console.WriteLine($"{criminal.FullName}, {(criminal.IsOnTheArrest ? "арестован" : "на свободе")}, рост {criminal.Height}, вес {criminal.Weight}. " +
+        {
+            var arrestString = criminal.IsOnTheArrest ? "арестован" : "на свободе";
+            Console.WriteLine($"{criminal.FullName}, {arrestString}, рост {criminal.Height}, вес {criminal.Weight}. " +
                 $"Национальность {criminal.Nationality}");
+        }
     }
 }
 
-public struct Criminal(string fullName, bool isOnTheArrest, int height, float weight, string nationality)
+public class Criminal(string fullName, bool isOnTheArrest, int height, float weight, string nationality)
 {
-    public readonly string FullName { get; } = fullName;
+    public string FullName { get; } = fullName;
     public bool IsOnTheArrest { get; private set; } = isOnTheArrest;
-    public readonly int Height { get; } = height;
-    public readonly float Weight { get; } = weight;
-    public readonly string Nationality { get; } = nationality;
+    public int Height { get; } = height;
+    public float Weight { get; } = weight;
+    public string Nationality { get; } = nationality;
 
     public void Arrest() =>
         IsOnTheArrest = true;
