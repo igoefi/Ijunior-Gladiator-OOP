@@ -2,39 +2,28 @@
 {
     public static void Main()
     {
-        List<Criminal> criiminals = new List<Criminal>()
+        List<Criminal> criminals = new List<Criminal>()
         {
-            new Criminal("Ефимов Игорь Денисович", false, 185, 100, "Энчпочмак"),
-            new Criminal("Сакутин Роман Астольфович", false, 356, 230, "Протеанин"),
-            new Criminal("Ефимов Денис Игоревич", false, 185, 100, "Энчпочмак"),
-            new Criminal("Владимир Владимирович Владикавказович", true, 165, 100, "Русский")
+            new Criminal("Ефимов Игорь Денисович", "Антиправительственное"),
+            new Criminal("Сакутин Роман Астольфович", "Обвиняется в:  1. массовое убийство 2. принужденный каннибализм 3. преступления против человечества 5. вандализм 6. каннибализм 7. геноцид 8. похищение 9. незаконное оборот оружия 10. кража 11. мошенничество 12. изготовление и сбыт поддельных документов 13. незаконный оборот наркотиков 14. пиратство 15. коррупция 16. ловушка на дороге  17. грабеж  18. вымогательство 19. политическая угроза 20. угон транспортного средства 21. изнасилование 22. торговля людьми о промышленной  23. нарушение авторского права 24. киберпреступления 25. сексуальное насилие 26. нарушение законов о защите окружающей среды 27. организация органов поддельной власти 28. военное преступление  29. утеря или уничтожение доказательств 30. неуплата налогов 31. организация или участие в мятеже 32. содействие террористической деятельности 33. следование расистским или ксенофобским взглядам  34. сотрудничество с преступной организацией  35. нарушение прав человека 36. неисполнение профессиональных обязанностей 37. уклонение от армейской службы  38. незаконное получение конфиденциальной информации  39. неправомерные действия в сфере финансов 40. саботаж или умышленное повреждение имущества  41. использование нарушенных законов для личной выгоды 42. нарушение законов о безопасности"),
+            new Criminal("Ефимов Денис Игоревич", "Антиправительственное"),
+            new Criminal("Владимир Владимирович Владикавказов", "Диверсификация")
         };
+        var needNationality = "Антиправительственное";
 
-        var needHeight = 185;
-        var needWeigth = 100;
-        var needNationality = "Энчпочмак";
-
-        var filtred = criiminals.Where(criminal => criminal.Nationality == needNationality && criminal.Height == needHeight
-        && criminal.Weight == needHeight && criminal.IsOnTheArrest == false);
+        criminals = criminals.Except(criminals.Where(criminal => criminal.Crime == needNationality)).ToList();
         Console.WriteLine("Все по запросу:");
 
-        foreach (var criminal in filtred)
-        {
-            var arrestString = criminal.IsOnTheArrest ? "арестован" : "на свободе";
-            Console.WriteLine($"{criminal.FullName}, {arrestString}, рост {criminal.Height}, вес {criminal.Weight}. " +
-                $"Национальность {criminal.Nationality}");
-        }
+        foreach (var criminal in criminals)
+            Console.WriteLine(criminal.ToString());
     }
 }
 
-public class Criminal(string fullName, bool isOnTheArrest, int height, float weight, string nationality)
+public class Criminal(string fullName, string crime)
 {
     public string FullName { get; } = fullName;
-    public bool IsOnTheArrest { get; private set; } = isOnTheArrest;
-    public int Height { get; } = height;
-    public float Weight { get; } = weight;
-    public string Nationality { get; } = nationality;
+    public string Crime { get; } = crime;
 
-    public void Arrest() =>
-        IsOnTheArrest = true;
+    public override string ToString() =>
+         $"{FullName}, преступление: {Crime}";
 }
