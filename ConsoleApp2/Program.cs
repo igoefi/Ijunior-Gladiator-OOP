@@ -2,42 +2,35 @@
 {
     public static void Main()
     {
-        List<Player> patients = new List<Player>()
+        //Странное название тушенки)
+        List<Stew> Stews = new List<Stew>()
         {
-            new Player("Ефимов Игорь Денисович",  20, 5),
-            new Player("Сакутин Роман Астольфович", 30, 10),
-            new Player("Ефимов Денис Игоревич", 42, 45),
-            new Player("Владимир Владимирович Владикавказович", 100, 72),
-            new Player("Ян Асильник Вольфович", 13, 13),
-            new Player("Яна Цист Игоревна", 14, 87),
-            new Player("Влад Адо Недов", 30, 45),
-            new Player("Гоша Рубчинский Оный", 32, 887),
-            new Player("Владимир Люберц Григорьевич", 3, 21),
-            new Player("Григорий Люберц Эльфович", 5, 3),
+            new Stew("Ефимов Игорь Денисович",  2023, 5),
+            new Stew("Сакутин Роман Астольфович", 2021, 10),
+            new Stew("Ефимов Денис Игоревич", 2010, 45),
+            new Stew("Владимир Владимирович Владикавказович", 1935, 72),
+            new Stew("Ян Асильник Вольфович", 2010, 13),
+            new Stew("Яна Цист Игоревна", 2026, 87),
+            new Stew("Влад Адо Недов", 2000, 45),
+            new Stew("Гоша Рубчинский Оный", 2011, 887),
+            new Stew("Владимир Люберц Григорьевич", 2000, 21),
+            new Stew("Григорий Люберц Эльфович", 2023, 3),
         };
 
-        var topCount = 3;
+        Console.WriteLine("\nВсё свежее:");
+        Stews = Stews.Where(patient => patient.YearOfProduction + patient.ExpirationDate >= DateTime.Now.Year).ToList();
 
-        Console.WriteLine("Топ 3 по уровню");
-        patients = patients.OrderByDescending(patient => patient.Level).ToList();
-
-        for (int i = 0; i < topCount; i++)
-            Console.WriteLine(patients[i]);
-
-        Console.WriteLine("\nСортировка по силе");
-        patients = patients.OrderByDescending(patient => patient.Strenght).ToList();
-
-        for (int i = 0; i < topCount; i++)
-            Console.WriteLine(patients[i]);
+        foreach (var stew in Stews)
+            Console.WriteLine(stew.ToString());
     }
 }
 
-public class Player(string fullName, int age, int disease)
+public class Stew(string fullName, int yearOfProduction, int expirationDate)
 {
-    public string FullName { get; } = fullName;
-    public int Level { get; } = age;
-    public int Strenght { get; } = disease;
+    public string Name { get; } = fullName;
+    public int YearOfProduction { get; } = yearOfProduction;
+    public int ExpirationDate { get; } = expirationDate;
 
     public override string ToString() =>
-        $"{FullName}, уровень {Level}, сила - {Strenght}";
+        $"{Name}, год производства {YearOfProduction}, срок годности - {ExpirationDate}";
 }
