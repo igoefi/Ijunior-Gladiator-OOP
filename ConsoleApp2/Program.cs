@@ -2,48 +2,42 @@
 {
     public static void Main()
     {
-        List<Patient> patients = new List<Patient>()
+        List<Player> patients = new List<Player>()
         {
-            new Patient("Ефимов Игорь Денисович",  20, "Рак"),
-            new Patient("Сакутин Роман Астольфович", 30, "Большой член"),
-            new Patient("Ефимов Денис Игоревич", 42, "Рак"),
-            new Patient("Владимир Владимирович Владикавказович", 100, "Импотенция"),
-            new Patient("Ян Асильник Вольфович", 13, "Сексофобия"),
-            new Patient("Яна Цист Игоревна", 14, "Шизофриния"),
-            new Patient("Влад Адо Недов", 30, "Импотенция"),
-            new Patient("Гоша Рубчинский Оный", 32, "Большой член"),
-            new Patient("Владимир Люберц Григорьевич", 3, "Импотенция"),
-            new Patient("Григорий Люберц Эльфович", 5, "Большой член"),
+            new Player("Ефимов Игорь Денисович",  20, 5),
+            new Player("Сакутин Роман Астольфович", 30, 10),
+            new Player("Ефимов Денис Игоревич", 42, 45),
+            new Player("Владимир Владимирович Владикавказович", 100, 72),
+            new Player("Ян Асильник Вольфович", 13, 13),
+            new Player("Яна Цист Игоревна", 14, 87),
+            new Player("Влад Адо Недов", 30, 45),
+            new Player("Гоша Рубчинский Оный", 32, 887),
+            new Player("Владимир Люберц Григорьевич", 3, 21),
+            new Player("Григорий Люберц Эльфович", 5, 3),
         };
 
-        var needDisease = "Большой член";
+        var topCount = 3;
 
-        Console.WriteLine("Сортировка по ФИО");
-        patients = patients.OrderBy(patient => patient.FullName).ToList();
+        Console.WriteLine("Топ 3 по уровню");
+        patients = patients.OrderByDescending(patient => patient.Level).ToList();
 
-        foreach (var patient in patients)
-            Console.WriteLine(patient.ToString());
+        for (int i = 0; i < topCount; i++)
+            Console.WriteLine(patients[i]);
 
-        Console.WriteLine("\nСортировка по возрасту");
-        patients = patients.OrderBy(patient => patient.Age).ToList();
+        Console.WriteLine("\nСортировка по силе");
+        patients = patients.OrderByDescending(patient => patient.Strenght).ToList();
 
-        foreach (var patient in patients)
-            Console.WriteLine(patient.ToString());
-
-        Console.WriteLine($"\nСортировка по заболеванию {needDisease}");
-        patients = patients.Where(patient => patient.Disease == needDisease).ToList();
-
-        foreach (var patient in patients)
-            Console.WriteLine(patient.ToString());
+        for (int i = 0; i < topCount; i++)
+            Console.WriteLine(patients[i]);
     }
 }
 
-public class Patient(string fullName, int age, string disease)
+public class Player(string fullName, int age, int disease)
 {
     public string FullName { get; } = fullName;
-    public int Age { get; } = age;
-    public string Disease { get; } = disease;
+    public int Level { get; } = age;
+    public int Strenght { get; } = disease;
 
     public override string ToString() =>
-        $"{FullName}, возраст {Age}, болезнь - {Disease}";
+        $"{FullName}, уровень {Level}, сила - {Strenght}";
 }
