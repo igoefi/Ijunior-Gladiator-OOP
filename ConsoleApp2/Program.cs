@@ -2,39 +2,48 @@
 {
     public static void Main()
     {
-        List<Criminal> criiminals = new List<Criminal>()
+        List<Patient> patients = new List<Patient>()
         {
-            new Criminal("Ефимов Игорь Денисович", false, 185, 100, "Энчпочмак"),
-            new Criminal("Сакутин Роман Астольфович", false, 356, 230, "Протеанин"),
-            new Criminal("Ефимов Денис Игоревич", false, 185, 100, "Энчпочмак"),
-            new Criminal("Владимир Владимирович Владикавказович", true, 165, 100, "Русский")
+            new Patient("Ефимов Игорь Денисович",  20, "Рак"),
+            new Patient("Сакутин Роман Астольфович", 30, "Большой член"),
+            new Patient("Ефимов Денис Игоревич", 42, "Рак"),
+            new Patient("Владимир Владимирович Владикавказович", 100, "Импотенция"),
+            new Patient("Ян Асильник Вольфович", 13, "Сексофобия"),
+            new Patient("Яна Цист Игоревна", 14, "Шизофриния"),
+            new Patient("Влад Адо Недов", 30, "Импотенция"),
+            new Patient("Гоша Рубчинский Оный", 32, "Большой член"),
+            new Patient("Владимир Люберц Григорьевич", 3, "Импотенция"),
+            new Patient("Григорий Люберц Эльфович", 5, "Большой член"),
         };
 
-        var needHeight = 185;
-        var needWeigth = 100;
-        var needNationality = "Энчпочмак";
+        var needDisease = "Большой член";
 
-        var filtred = criiminals.Where(criminal => criminal.Nationality == needNationality && criminal.Height == needHeight
-        && criminal.Weight == needHeight && criminal.IsOnTheArrest == false);
-        Console.WriteLine("Все по запросу:");
+        Console.WriteLine("Сортировка по ФИО");
+        patients = patients.OrderBy(patient => patient.FullName).ToList();
 
-        foreach (var criminal in filtred)
-        {
-            var arrestString = criminal.IsOnTheArrest ? "арестован" : "на свободе";
-            Console.WriteLine($"{criminal.FullName}, {arrestString}, рост {criminal.Height}, вес {criminal.Weight}. " +
-                $"Национальность {criminal.Nationality}");
-        }
+        foreach (var patient in patients)
+            Console.WriteLine(patient.ToString());
+
+        Console.WriteLine("\nСортировка по возрасту");
+        patients = patients.OrderBy(patient => patient.Age).ToList();
+
+        foreach (var patient in patients)
+            Console.WriteLine(patient.ToString());
+
+        Console.WriteLine($"\nСортировка по заболеванию {needDisease}");
+        patients = patients.Where(patient => patient.Disease == needDisease).ToList();
+
+        foreach (var patient in patients)
+            Console.WriteLine(patient.ToString());
     }
 }
 
-public class Criminal(string fullName, bool isOnTheArrest, int height, float weight, string nationality)
+public class Patient(string fullName, int age, string disease)
 {
     public string FullName { get; } = fullName;
-    public bool IsOnTheArrest { get; private set; } = isOnTheArrest;
-    public int Height { get; } = height;
-    public float Weight { get; } = weight;
-    public string Nationality { get; } = nationality;
+    public int Age { get; } = age;
+    public string Disease { get; } = disease;
 
-    public void Arrest() =>
-        IsOnTheArrest = true;
+    public override string ToString() =>
+        $"{FullName}, возраст {Age}, болезнь - {Disease}";
 }
