@@ -16,8 +16,9 @@
         var selectedChar = 'Б';
 
         Console.WriteLine("\nПеревод:");
-        soldiers2 = soldiers1.Where(soldier => soldier.Name[0] == selectedChar).ToList(); ;
+        var temp = soldiers1.Where(soldier => soldier.Name[0] == selectedChar).ToList(); ;
         soldiers1 = soldiers1.Except(soldiers2).ToList();
+        soldiers2 = soldiers2.Union(temp).ToList();
 
         foreach (var soldier in soldiers2)
             Console.WriteLine($"{soldier.Name}, звание {soldier.Rank}");
